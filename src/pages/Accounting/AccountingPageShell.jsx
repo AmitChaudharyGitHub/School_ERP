@@ -344,7 +344,7 @@ const AccountingPageShell = ({
               </table>
 
               {showColumnMenu && (
-                <div className="position-absolute bg-white border rounded-3 shadow-sm p-2 text-start" style={{ width: "240px", top: "36px", right: "8px", zIndex: 20 }}>
+                <div className="position-absolute bg-white border rounded-3 shadow-sm p-2 text-start" style={{ width: "200px", top: "36px", right: "8px", zIndex: 20 }}>
                   <button type="button" className="btn btn-light btn-sm w-100 text-start mb-1" onClick={showAllColumns}>
                     Use All Columns
                   </button>

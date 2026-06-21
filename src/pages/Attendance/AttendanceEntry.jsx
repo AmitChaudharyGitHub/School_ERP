@@ -4,7 +4,9 @@ import {
   CalendarDays,
   CheckCircle2,
   ChevronLeft,
+  ChevronsLeft,
   ChevronRight,
+  ChevronsRight,
   Clock3,
   LayoutDashboard,
   RotateCcw,
@@ -121,6 +123,17 @@ function AttendanceEntry() {
   const lateCount = dayStatuses.filter((value) => value === "L").length;
   const attendanceAvg = Math.round((presentCount / students.length) * 100);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const totalPages = Math.max(1, Math.ceil(students.length / pageSize));
+  const activePage = Math.min(currentPage, totalPages);
+  const startIndex = students.length === 0 ? 0 : (activePage - 1) * pageSize + 1;
+  const endIndex = Math.min(activePage * pageSize, students.length);
+  const paginatedStudents = students.slice((activePage - 1) * pageSize, activePage * pageSize);
+
+  const goToPage = (page) => setCurrentPage(Math.min(Math.max(page, 1), totalPages));
+
   const summaryCards = [
     { title: "Total Students", value: students.length, note: `Class ${studentClass}-${division}`, icon: Users, color: "#2563eb", background: "#eff6ff" },
     { title: "Present", value: presentCount, note: `${attendanceAvg}% today`, icon: UserCheck, color: "#16a34a", background: "#f0fdf4" },
@@ -140,40 +153,169 @@ function AttendanceEntry() {
     window.alert("Attendance saved successfully");
   };
 
+  const [selectedStudentModal, setSelectedStudentModal] = useState(null);
+
+  const computeStudentPercent = (student) => {
+    const att = attendance[student] || {};
+    let working = 0;
+    let present = 0;
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      if (isWeekend(day)) continue;
+      working += 1;
+      const v = att[day] || "P";
+      if (v === "P") present += 1;
+    }
+    return working ? Math.round((present / working) * 100) : 0;
+  };
+
+  function AttendanceCalendarModal({ student, onClose }) {
+    const att = attendance[student] || {};
+    const yearSel = selectedMonthDate.getFullYear();
+    const monthSel = selectedMonthDate.getMonth();
+    const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+    const totalWorking = days.filter((d) => !isWeekend(d)).length;
+    const totalPresent = days.filter((d) => !isWeekend(d) && (att[d] || "P") === "P").length;
+    const totalAbsent = days.filter((d) => !isWeekend(d) && (att[d] || "P") === "A").length;
+    const totalLate = days.filter((d) => !isWeekend(d) && (att[d] || "P") === "L").length;
+    const pct = totalWorking ? Math.round((totalPresent / totalWorking) * 100) : 0;
+
+    return (
+      <div className="modal fade show d-block attendance-entry-modal" style={{ backgroundColor: "rgba(15,23,42,0.42)" }} onClick={onClose}>
+        <div className="modal-dialog modal-lg modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content border-0 shadow">
+            <div className="modal-header">
+              <div className="header-left">
+                <h5 className="fw-bold mb-0 modal-title">{student} <span className="badge bg-primary ms-2">{pct}%</span></h5>
+              </div>
+
+              <div className="header-center">{monthLabel}</div>
+
+              <button className="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center close-btn" onClick={onClose} aria-label="Close" title="Close">✕</button>
+            </div>
+            <div className="modal-body">
+              <div className="row g-2 mb-3">
+                <div className="col-6 col-md-3">
+                  <div className="modal-stat" style={{ color: "#2563eb", background: "#eff6ff" }}>
+                    <div className="small fw-semibold">Working Days</div>
+                    <strong>{totalWorking}</strong>
+                  </div>
+                </div>
+                <div className="col-6 col-md-3">
+                  <div className="modal-stat" style={{ color: "#16a34a", background: "#f0fdf4" }}>
+                    <div className="small fw-semibold">Present</div>
+                    <strong>{totalPresent}</strong>
+                  </div>
+                </div>
+                <div className="col-6 col-md-3">
+                  <div className="modal-stat" style={{ color: "#dc2626", background: "#fef2f2" }}>
+                    <div className="small fw-semibold">Absent</div>
+                    <strong>{totalAbsent}</strong>
+                  </div>
+                </div>
+                <div className="col-6 col-md-3">
+                  <div className="modal-stat" style={{ color: "#ea580c", background: "#fff7ed" }}>
+                    <div className="small fw-semibold">Late</div>
+                    <strong>{totalLate}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div className="calendar-grid mb-3">
+                {Array.from({ length: 7 }, (_, i) => ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][i]).map((d) => (
+                  <div key={d} className="calendar-head">{d}</div>
+                ))}
+                {days.map((day) => {
+                  const status = isWeekend(day) ? "holiday" : (att[day] || "P");
+                  const className = status === "holiday" ? "holiday" : status === "A" ? "absent" : status === "L" ? "late" : "present";
+                  return (
+                    <div key={day} className={`calendar-cell ${className}`}>
+                      {status === "holiday" ? (
+                        <div className="holiday-dot">{day}</div>
+                      ) : (
+                        <>
+                          <span>{day}</span>
+                          <strong>{status}</strong>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="d-flex justify-content-center gap-3 small flex-wrap">
+                <span><span className="legend-dot" style={{ background: "#16a34a" }} /> P - Present</span>
+                <span><span className="legend-dot" style={{ background: "#dc2626" }} /> A - Absent</span>
+                <span><span className="legend-dot" style={{ background: "#ea580c" }} /> L - Late</span>
+                <span><span className="legend-dot" style={{ background: "#94a3b8" }} /> Sat / Sun - Holiday</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="attendance-entry-page">
+    <div className="container-fluid attendance-page w-100">
       <style>{`
-        .attendance-entry-page { padding: 14px 16px 20px; font-size: 0.86rem; color: #1f2937; }
-        .attendance-entry-page .page-header { margin-bottom: 12px; }
-        .attendance-entry-page .page-title { color: #0f172a; font-size: 1.35rem; letter-spacing: 0; }
-        .attendance-entry-page .breadcrumb-lite { color: #64748b; }
-        .attendance-entry-page .section-label { color: #334155; font-size: 0.78rem; font-weight: 800; letter-spacing: 0; text-transform: uppercase; margin-bottom: 8px; }
-        .attendance-entry-page .summary-grid { display: grid; grid-template-columns: repeat(5, minmax(150px, 1fr)); gap: 10px; margin-bottom: 12px; }
-        .attendance-entry-page .summary-card, .attendance-entry-page .filter-card, .attendance-entry-page .dashboard-card { background: #fff; border: 1px solid #e6ebf2; border-radius: 8px; box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04); }
-        .attendance-entry-page .summary-card { min-height: 74px; padding: 12px; display: flex; align-items: center; gap: 10px; }
-        .attendance-entry-page .summary-icon { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
-        .attendance-entry-page .summary-value { margin: 0; font-size: 1.2rem; font-weight: 800; color: #0f172a; line-height: 1.1; }
-        .attendance-entry-page .summary-title { color: #64748b; font-size: 0.76rem; font-weight: 600; white-space: nowrap; }
-        .attendance-entry-page .summary-note { color: #64748b; font-size: 0.72rem; font-weight: 600; }
-        .attendance-entry-page .filter-card { margin-bottom: 10px; }
-        .attendance-entry-page .filter-card .card-body, .attendance-entry-page .dashboard-card .card-body { padding: 10px 12px !important; }
-        .attendance-entry-page .card-heading { color: #0f172a; font-size: 0.84rem; font-weight: 800; margin: 0; }
-        .attendance-entry-page .filter-actions .btn, .attendance-entry-page .icon-btn { width: 31px; height: 31px; padding: 0; border-radius: 7px; }
-        .attendance-entry-page .attendance-shell { border: 1px solid #e6ebf2; border-radius: 8px; overflow: auto; max-height: 620px; }
-        .attendance-entry-page .attendance-grid { width: max-content; white-space: nowrap; table-layout: fixed; }
-        .attendance-entry-page .attendance-grid th { background: #f8fafc; color: #0f172a; border-color: #dbe3ee; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0; }
-        .attendance-entry-page .attendance-grid td { border-color: #edf2f7; vertical-align: middle; }
-        .attendance-entry-page .sticky-name { position: sticky; left: 0; z-index: 3; min-width: 230px; max-width: 230px; background: #fff; box-shadow: 1px 0 0 #e6ebf2; }
-        .attendance-entry-page thead .sticky-name { z-index: 5; background: #f8fafc; }
-        .attendance-entry-page .day-cell { min-width: 54px; max-width: 54px; height: 38px; font-weight: 800; cursor: default; }
-        .attendance-entry-page .day-cell.active-day { outline: 2px solid #2563eb; outline-offset: -2px; cursor: pointer; }
-        .attendance-entry-page .status-present { background: #f0fdf4 !important; color: #16a34a !important; }
-        .attendance-entry-page .status-absent { background: #fef2f2 !important; color: #dc2626 !important; }
-        .attendance-entry-page .status-late { background: #fff7ed !important; color: #ea580c !important; }
-        .attendance-entry-page .status-holiday { background: #f8fafc !important; color: #94a3b8 !important; }
-        .attendance-entry-page .legend-dot { width: 9px; height: 9px; border-radius: 999px; display: inline-block; }
-        @media (max-width: 992px) { .attendance-entry-page .summary-grid { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); } }
-        @media (max-width: 768px) { .attendance-entry-page .breadcrumb-lite { display: none !important; } }
+        .attendance-page { min-height: calc(100vh - 20px); background: #f6f8fb; color: #172033; }
+        .attendance-page .page-header { background: #ffffff; border: 1px solid #e6ebf2; border-left: 4px solid #2563eb; border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05); }
+        .attendance-page .page-title { color: #1d4ed8; font-size: 1.25rem; line-height: 1.2; }
+        .attendance-page .breadcrumb-lite { color: #64748b; }
+        .attendance-page .section-label { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; color: #1e3a8a; font-size: 0.9rem; font-weight: 700; }
+        .attendance-page .section-label::before { content: ""; width: 6px; height: 18px; border-radius: 999px; background: #2563eb; }
+        .attendance-page .summary-grid { display: grid; grid-template-columns: repeat(5, minmax(150px, 1fr)); gap: 10px; margin-bottom: 10px; }
+        .attendance-page .summary-card, .attendance-page .filter-card, .attendance-page .dashboard-card { background: #ffffff; border: 1px solid #e6ebf2; border-radius: 8px; box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05); }
+        .attendance-page .summary-card { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 10px 12px; }
+        .attendance-page .summary-icon, .attendance-page .pending-icon { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+        .attendance-page .summary-value { margin: 0; font-size: 1.2rem; font-weight: 800; color: #0f172a; line-height: 1.1; }
+        .attendance-page .summary-title { color: #64748b; font-size: 0.76rem; font-weight: 600; white-space: nowrap; }
+        .attendance-page .summary-note { color: #64748b; font-size: 0.72rem; font-weight: 600; }
+        .attendance-page .filter-card { margin-bottom: 10px; }
+        .attendance-page .filter-card .card-body, .attendance-page .dashboard-card .card-body { padding: 10px 12px !important; }
+        .attendance-page .card-heading { color: #0f172a; font-size: 0.84rem; font-weight: 800; margin: 0; }
+        .attendance-page .chart-wrap { height: 245px; }
+        .attendance-page .small-chart-wrap { height: 188px; }
+        .attendance-page .filter-actions .btn { width: 31px; height: 31px; padding: 0; border-radius: 7px; }
+        .attendance-page .table-shell, .attendance-page .attendance-shell { border: 1px solid #e6ebf2; border-radius: 8px; overflow: auto; }
+        .attendance-page .dashboard-table thead th, .attendance-page .attendance-grid th { background: #f8fafc; color: #0f172a; border-bottom: 1px solid #dbe3ee; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0; }
+        .attendance-page .dashboard-table tbody td, .attendance-page .attendance-grid td { color: #1f2937; border-bottom-color: #edf2f7; vertical-align: middle; }
+        .attendance-page .dashboard-table tbody tr:hover td, .attendance-page .attendance-grid tbody tr:hover td { background: #f8fbff; }
+        .attendance-page .badge { border-radius: 999px; padding: 0.35em 0.65em; font-weight: 700; }
+        .attendance-page .pending-item { border: 1px solid #e6ebf2; border-radius: 8px; padding: 9px; }
+        .attendance-page .legend-dot { width: 9px; height: 9px; border-radius: 999px; display: inline-block; }
+        .attendance-entry-modal .modal-content { border-radius: 8px; }
+        .attendance-entry-modal .modal-header { background: #ffffff; border-left: 4px solid #2563eb; border-radius: 8px 8px 0 0; padding: 12px; display: flex; align-items: center; gap: 12px; }
+        .attendance-entry-modal .modal-title { color: #1d4ed8; font-size: 1.05rem; margin: 0; }
+        .attendance-entry-modal .modal-breadcrumb { color: #64748b; margin-bottom: 4px; }
+        .attendance-entry-modal .modal-header .header-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+        .attendance-entry-modal .modal-header .header-center { flex: 1 1 auto; text-align: center; color: #64748b; font-size: 0.95rem; }
+        .attendance-entry-modal .modal-header .close-btn { flex: 0 0 auto; }
+        .attendance-entry-modal .modal-body { background: #ffffff; padding: 14px; }
+        .attendance-entry-modal .modal-stat { border: 1px solid #e6ebf2; border-radius: 8px; padding: 10px; text-align: center; }
+        .attendance-entry-modal .modal-stat strong { display: block; font-size: 1.3rem; line-height: 1.1; }
+        .attendance-entry-modal .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(42px, 1fr)); gap: 6px; }
+        .attendance-entry-modal .calendar-head { color: #64748b; font-size: 0.75rem; font-weight: 800; text-align: center; }
+        .attendance-entry-modal .calendar-cell { min-height: 48px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid #e6ebf2; }
+        .attendance-entry-modal .calendar-cell span { font-weight: 700; }
+        .attendance-entry-modal .calendar-cell strong { font-size: 0.72rem; margin-top: 2px; }
+        .attendance-entry-modal .calendar-cell.present { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
+        .attendance-entry-modal .calendar-cell.absent { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+        .attendance-entry-modal .calendar-cell.late { background: #fff7ed; color: #ea580c; border-color: #fed7aa; }
+        .attendance-entry-modal .calendar-cell.holiday { background: transparent; color: #64748b; border-color: #e6ebf2; }
+        .attendance-entry-modal .holiday-dot { width: 36px; height: 36px; border-radius: 50%; background: #94a3b8; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; }
+        .attendance-page .holiday-dot-small { width: 12px; height: 12px; border-radius: 50%; background: #94a3b8; display: inline-block; }
+        .attendance-page .sticky-name { position: sticky; left: 0; z-index: 3; min-width: 230px; max-width: 230px; background: #fff; box-shadow: 1px 0 0 #e6ebf2; }
+        .attendance-page thead .sticky-name { z-index: 5; background: #f8fafc; }
+        .attendance-page .day-cell { min-width: 54px; max-width: 54px; height: 38px; font-weight: 800; cursor: default; }
+        .attendance-page .day-cell.active-day { outline: 2px solid #2563eb; outline-offset: -2px; cursor: pointer; }
+        .attendance-page .status-present { background: #f0fdf4 !important; color: #16a34a !important; }
+        .attendance-page .status-absent { background: #fef2f2 !important; color: #dc2626 !important; }
+        .attendance-page .status-late { background: #fff7ed !important; color: #ea580c !important; }
+        .attendance-page .status-holiday { background: #f8fafc !important; color: #94a3b8 !important; }
+        @media (max-width: 1280px) { .attendance-page .summary-grid { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); } }
+        @media (max-width: 768px) { .attendance-page .breadcrumb-lite { display: none !important; } }
       `}</style>
 
       <div className="page-header d-flex justify-content-between align-items-center gap-3 flex-wrap">
@@ -257,6 +399,7 @@ function AttendanceEntry() {
               <thead>
                 <tr>
                   <th className="sticky-name text-start">Student Name</th>
+                  <th className="text-center" style={{ minWidth: 120 }}>Avg Attendance</th>
                   {Array.from({ length: daysInMonth }, (_, index) => {
                     const day = index + 1;
                     return (
@@ -269,9 +412,18 @@ function AttendanceEntry() {
                 </tr>
               </thead>
               <tbody>
-                {students.map((student) => (
+                {paginatedStudents.map((student) => (
                   <tr key={student}>
-                    <td className="sticky-name text-start fw-semibold">{student}</td>
+                    <td className="sticky-name text-start fw-semibold">
+                      <div className="d-flex align-items-center gap-2">
+                        <span>{student}</span>
+                      </div>
+                    </td>
+                    <td className="text-center align-middle">
+                      <button className="btn btn-link btn-sm p-0 text-decoration-none text-muted" onClick={() => setSelectedStudentModal(student)} title="View attendance details">
+                        {computeStudentPercent(student)}%
+                      </button>
+                    </td>
                     {Array.from({ length: daysInMonth }, (_, index) => {
                       const day = index + 1;
                       const value = isWeekend(day) ? "-" : attendance[student]?.[day] || "P";
@@ -282,7 +434,7 @@ function AttendanceEntry() {
                           onClick={() => currentDay === day && !isWeekend(day) && markAttendance(student, day)}
                           title={currentDay === day && !isWeekend(day) ? "Click to cycle status" : undefined}
                         >
-                          {value}
+                          {isWeekend(day) ? <span className="holiday-dot-small" aria-hidden="true" /> : value}
                         </td>
                       );
                     })}
@@ -292,14 +444,95 @@ function AttendanceEntry() {
             </table>
           </div>
 
+          <div className="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+            <div className="d-flex align-items-center gap-1 flex-wrap">
+              <button
+                type="button"
+                className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center justify-content-center"
+                style={{ width: "28px", height: "26px", padding: 0 }}
+                onClick={() => goToPage(1)}
+                disabled={activePage === 1}
+                aria-label="First page"
+                title="First page"
+              >
+                <ChevronsLeft size={14} />
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center justify-content-center"
+                style={{ width: "28px", height: "26px", padding: 0 }}
+                onClick={() => goToPage(activePage - 1)}
+                disabled={activePage === 1}
+                aria-label="Previous page"
+                title="Previous page"
+              >
+                <ChevronLeft size={14} />
+              </button>
+              <input
+                type="number"
+                className="form-control form-control-sm text-center"
+                style={{ width: "54px", height: "26px", padding: "0 4px" }}
+                min="1"
+                max={totalPages}
+                value={activePage}
+                onChange={(event) => goToPage(Number(event.target.value) || 1)}
+                aria-label="Current page"
+              />
+              <small className="text-muted px-1">/ {totalPages}</small>
+              <button
+                type="button"
+                className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center justify-content-center"
+                style={{ width: "28px", height: "26px", padding: 0 }}
+                onClick={() => goToPage(activePage + 1)}
+                disabled={activePage === totalPages}
+                aria-label="Next page"
+                title="Next page"
+              >
+                <ChevronRight size={14} />
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center justify-content-center"
+                style={{ width: "28px", height: "26px", padding: 0 }}
+                onClick={() => goToPage(totalPages)}
+                disabled={activePage === totalPages}
+                aria-label="Last page"
+                title="Last page"
+              >
+                <ChevronsRight size={14} />
+              </button>
+              <select
+                className="form-select form-select-sm ms-2"
+                style={{ width: "68px", height: "26px", paddingTop: 0, paddingBottom: 0 }}
+                value={pageSize}
+                onChange={(event) => {
+                  setPageSize(Number(event.target.value));
+                  setCurrentPage(1);
+                }}
+                aria-label="Items per page"
+              >
+                {[10, 25, 50, 100].map((size) => (
+                  <option key={size} value={size}>{size}</option>
+                ))}
+              </select>
+              <small className="text-muted">items per page</small>
+            </div>
+            <small className="text-muted">
+              {startIndex} - {endIndex} of {students.length} items
+            </small>
+          </div>
+
           <div className="d-flex gap-3 flex-wrap small mt-3">
             <span className="d-inline-flex align-items-center gap-1"><span className="legend-dot" style={{ background: "#16a34a" }} /> P - Present</span>
             <span className="d-inline-flex align-items-center gap-1"><span className="legend-dot" style={{ background: "#dc2626" }} /> A - Absent</span>
             <span className="d-inline-flex align-items-center gap-1"><span className="legend-dot" style={{ background: "#ea580c" }} /> L - Late</span>
-            <span className="d-inline-flex align-items-center gap-1"><span className="legend-dot" style={{ background: "#94a3b8" }} /> - Holiday</span>
+            <span className="d-inline-flex align-items-center gap-1"><span className="legend-dot" style={{ background: "#94a3b8" }} /> Sat / Sun - Holiday</span>
           </div>
         </div>
       </div>
+      {selectedStudentModal && (
+        <AttendanceCalendarModal student={selectedStudentModal} onClose={() => setSelectedStudentModal(null)} />
+      )}
     </div>
   );
 }

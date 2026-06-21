@@ -42,7 +42,7 @@ const FeeStructure = () => {
     },
   ];
 
-  const title = "Fee Structure";  
+  const title = "Fee Structure";
   const breadcrumb = "Fee Structure";
   const sectionLabel = "Structure Summary";
   const summaryCards = [
@@ -63,7 +63,7 @@ const FeeStructure = () => {
   const [filterValues, setFilterValues] = useState(
     filters.reduce((acc, filter) => ({ ...acc, [filter.key]: filter.defaultValue || "" }), {})
   );
-  const [columnFilters, setColumnFilters] = useState({}); 
+  const [columnFilters, setColumnFilters] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [columnWidths, setColumnWidths] = useState({});

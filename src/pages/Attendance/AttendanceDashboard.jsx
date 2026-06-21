@@ -84,16 +84,17 @@ const AttendanceDashboard = () => {
   const resetFilters = () => setFilters({ academicYear: "2025-26", standard: "", division: "" });
 
   return (
-    <div className="attendance-page">
+    <div className="container-fluid attendance-page w-100">
       <style>{`
-        .attendance-page { padding: 14px 16px 20px; font-size: 0.86rem; color: #1f2937; }
-        .attendance-page .page-header { margin-bottom: 12px; }
-        .attendance-page .page-title { color: #0f172a; font-size: 1.35rem; letter-spacing: 0; }
+        .attendance-page { min-height: calc(100vh - 20px); background: #f6f8fb; color: #172033; }
+        .attendance-page .page-header { background: #ffffff; border: 1px solid #e6ebf2; border-left: 4px solid #2563eb; border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05); }
+        .attendance-page .page-title { color: #1d4ed8; font-size: 1.25rem; line-height: 1.2; }
         .attendance-page .breadcrumb-lite { color: #64748b; }
-        .attendance-page .section-label { color: #334155; font-size: 0.78rem; font-weight: 800; letter-spacing: 0; text-transform: uppercase; margin-bottom: 8px; }
-        .attendance-page .summary-grid { display: grid; grid-template-columns: repeat(5, minmax(150px, 1fr)); gap: 10px; margin-bottom: 12px; }
-        .attendance-page .summary-card, .attendance-page .filter-card, .attendance-page .dashboard-card { background: #fff; border: 1px solid #e6ebf2; border-radius: 8px; box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04); }
-        .attendance-page .summary-card { min-height: 74px; padding: 12px; display: flex; align-items: center; gap: 10px; }
+        .attendance-page .section-label { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; color: #1e3a8a; font-size: 0.9rem; font-weight: 700; }
+        .attendance-page .section-label::before { content: ""; width: 6px; height: 18px; border-radius: 999px; background: #2563eb; }
+        .attendance-page .summary-grid { display: grid; grid-template-columns: repeat(5, minmax(150px, 1fr)); gap: 10px; margin-bottom: 10px; }
+        .attendance-page .summary-card, .attendance-page .filter-card, .attendance-page .dashboard-card { background: #ffffff; border: 1px solid #e6ebf2; border-radius: 8px; box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05); }
+        .attendance-page .summary-card { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 10px 12px; }
         .attendance-page .summary-icon, .attendance-page .pending-icon { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
         .attendance-page .summary-value { margin: 0; font-size: 1.2rem; font-weight: 800; color: #0f172a; line-height: 1.1; }
         .attendance-page .summary-title { color: #64748b; font-size: 0.76rem; font-weight: 600; white-space: nowrap; }
@@ -111,7 +112,7 @@ const AttendanceDashboard = () => {
         .attendance-page .badge { border-radius: 999px; padding: 0.35em 0.65em; font-weight: 700; }
         .attendance-page .pending-item { border: 1px solid #e6ebf2; border-radius: 8px; padding: 9px; }
         .attendance-page .legend-dot { width: 9px; height: 9px; border-radius: 999px; display: inline-block; }
-        @media (max-width: 992px) { .attendance-page .summary-grid { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); } }
+        @media (max-width: 1280px) { .attendance-page .summary-grid { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); } }
         @media (max-width: 768px) { .attendance-page .breadcrumb-lite { display: none !important; } }
       `}</style>
 

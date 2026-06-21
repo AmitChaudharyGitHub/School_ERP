@@ -214,71 +214,72 @@ name: "Aarav Sharma",
   };
 
   return (
-    <div className="container-fluid student-document-page w-100">
+    <div className="container-fluid document-page w-100">
       <style>{`
-        .student-document-page {
-          padding: 14px 16px 20px;
-          font-size: 0.86rem;
-          color: #1f2937;
+        .document-page {
+          min-height: calc(100vh - 20px);
+          background: #f6f8fb;
+          color: #172033;
         }
 
-        .student-document-page .page-header {
-  background: #ffffff;
-  border: 1px solid #e6ebf2;
-  border-left: 4px solid #2563eb;
-  border-radius: 8px;
-  padding: 10px 14px;
-  margin-bottom: 10px;
-  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
-}
+        .document-page .page-header {
+          background: #ffffff;
+          border: 1px solid #e6ebf2;
+          border-left: 4px solid #2563eb;
+          border-radius: 8px;
+          padding: 10px 14px;
+          margin-bottom: 10px;
+          box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+        }
 
-.student-document-page .page-title {
-  color: #1d4ed8;
-  font-size: 1.25rem;
-  line-height: 1.2;
-}
+        .document-page .page-title {
+          color: #1d4ed8;
+          font-size: 1.25rem;
+          line-height: 1.2;
+        }
 
-
-        .student-document-page .breadcrumb-lite {
+        .document-page .breadcrumb-lite {
           color: #64748b;
         }
 
-        .student-document-page .section-label {
-          color: #334155;
-          font-size: 0.78rem;
-          font-weight: 800;
-          letter-spacing: 0;
-          text-transform: uppercase;
-          margin-bottom: 8px;
+        .document-page .section-label {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin: 0 0 8px;
+          color: #1e3a8a;
+          font-size: 0.9rem;
+          font-weight: 700;
         }
 
-        .student-document-page .summary-grid {
+        .document-page .section-label::before {
+          content: "";
+          width: 6px;
+          height: 18px;
+          border-radius: 999px;
+          background: #2563eb;
+        }
+
+        .document-page .summary-grid {
           display: grid;
           grid-template-columns: repeat(5, minmax(150px, 1fr));
           gap: 10px;
-          margin-bottom: 12px;
+          margin-bottom: 10px;
         }
 
-        .student-document-page .summary-card,
-        .student-document-page .profile-card,
-        .student-document-page .filter-card,
-        .student-document-page .grid-card,
-        .student-document-page .preview-card {
-          background: #ffffff;
-          border: 1px solid #e6ebf2;
-          border-radius: 8px;
-          box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
-        }
-
-        .student-document-page .summary-card {
-          min-height: 74px;
-          padding: 12px;
+        .document-page .summary-card {
           display: flex;
           align-items: center;
           gap: 10px;
+          min-width: 0;
+          background: #fff;
+          border: 1px solid #e6ebf2;
+          border-radius: 8px;
+          padding: 10px 12px;
+          box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
         }
 
-        .student-document-page .summary-icon {
+        .document-page .summary-icon {
           width: 40px;
           height: 40px;
           border-radius: 8px;
@@ -288,7 +289,7 @@ name: "Aarav Sharma",
           flex: 0 0 auto;
         }
 
-        .student-document-page .summary-value {
+        .document-page .summary-value {
           margin: 0;
           font-size: 1.2rem;
           font-weight: 800;
@@ -296,18 +297,45 @@ name: "Aarav Sharma",
           line-height: 1.1;
         }
 
-        .student-document-page .summary-title {
+        .document-page .summary-title {
           color: #64748b;
           font-size: 0.76rem;
           font-weight: 600;
           white-space: nowrap;
         }
 
-        .student-document-page .card-body {
-          padding: 12px !important;
+        .document-page .profile-card,
+        .document-page .filter-card,
+        .document-page .grid-card {
+          background: #ffffff;
+          border: 1px solid #e6ebf2;
+          border-radius: 8px;
+          box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
         }
 
-        .student-document-page .student-photo {
+        .document-page .profile-card {
+          margin-bottom: 10px;
+        }
+
+        .document-page .filter-card {
+          margin-bottom: 10px;
+        }
+
+        .document-page .profile-card .card-body,
+        .document-page .filter-card .card-body,
+        .document-page .grid-card .card-body {
+          padding: 10px 12px !important;
+        }
+
+        .document-page .filter-actions .btn,
+        .document-page .icon-btn {
+          width: 31px;
+          height: 31px;
+          padding: 0;
+          border-radius: 7px;
+        }
+
+        .document-page .student-photo {
           width: 92px;
           height: 108px;
           object-fit: cover;
@@ -315,53 +343,45 @@ name: "Aarav Sharma",
           border: 1px solid #dbe3ee;
         }
 
-        .student-document-page .info-label {
+        .document-page .info-label {
           color: #64748b;
           font-size: 0.74rem;
           font-weight: 700;
           margin-bottom: 2px;
         }
 
-        .student-document-page .info-value {
+        .document-page .info-value {
           color: #0f172a;
           font-size: 0.84rem;
           font-weight: 700;
           margin-bottom: 9px;
         }
 
-        .student-document-page .progress {
+        .document-page .progress {
           height: 8px;
           border-radius: 999px;
           background: #eef2f7;
         }
 
-        .student-document-page .filter-actions .btn,
-        .student-document-page .icon-btn {
-          width: 31px;
-          height: 31px;
-          padding: 0;
-          border-radius: 7px;
-        }
-
-        .student-document-page .table-shell {
+        .document-page .table-shell {
           border: 1px solid #e6ebf2;
           border-radius: 8px;
           overflow: auto;
         }
 
-        .student-document-page .document-table {
+        .document-page .document-table {
           min-width: 980px;
           table-layout: fixed;
         }
 
-        .student-document-page .document-table th,
-        .student-document-page .document-table td {
+        .document-page .document-table th,
+        .document-page .document-table td {
           overflow: hidden;
           text-overflow: ellipsis;
           vertical-align: middle;
         }
 
-        .student-document-page .document-table thead th {
+        .document-page .document-table thead th {
           background: #f8fafc;
           color: #0f172a;
           border-bottom: 1px solid #dbe3ee;
@@ -370,30 +390,30 @@ name: "Aarav Sharma",
           letter-spacing: 0;
         }
 
-        .student-document-page .document-table tbody td {
+        .document-page .document-table tbody td {
           color: #1f2937;
           border-bottom-color: #edf2f7;
         }
 
-        .student-document-page .document-table tbody tr:hover td,
-        .student-document-page .document-table tbody tr.active-row td {
+        .document-page .document-table tbody tr:hover td,
+        .document-page .document-table tbody tr.active-row td {
           background: #f8fbff;
         }
 
-        .student-document-page .badge {
+        .document-page .badge {
           border-radius: 999px;
           padding: 0.35em 0.65em;
           font-weight: 700;
         }
 
-        .student-document-page .preview-frame {
+        .document-page .preview-frame {
           min-height: 190px;
           border: 1px dashed #cbd5e1;
           border-radius: 8px;
           background: #f8fafc;
         }
 
-        .student-document-page .modal-backdrop-lite {
+        .document-page .modal-backdrop-lite {
           position: fixed;
           inset: 0;
           z-index: 1050;
@@ -404,21 +424,25 @@ name: "Aarav Sharma",
           padding: 16px;
         }
 
-        .student-document-page .upload-modal {
+        .document-page .upload-modal {
           width: min(560px, 100%);
           background: #ffffff;
           border-radius: 8px;
           box-shadow: 0 20px 60px rgba(15, 23, 42, 0.22);
         }
 
-        @media (max-width: 992px) {
-          .student-document-page .summary-grid {
+        @media (max-width: 1280px) {
+          .document-page .summary-grid {
             grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
           }
         }
 
         @media (max-width: 768px) {
-          .student-document-page .breadcrumb-lite {
+          .document-page .page-header {
+            align-items: flex-start !important;
+          }
+
+          .document-page .breadcrumb-lite {
             display: none !important;
           }
         }
@@ -441,7 +465,11 @@ name: "Aarav Sharma",
 
 
 
-      <p className="section-label">Document Statistics</p>
+      <h5 className="section-label">
+        Document Statistics
+      </h5>
+
+      {/* SUMMARY CARDS */}
 
       <div className="summary-grid">
         {summaryCards.map((card) => {
@@ -449,8 +477,11 @@ name: "Aarav Sharma",
 
           return (
             <div className="summary-card" key={card.title}>
-              <div className="summary-icon" style={{ color: card.color, background: card.background }}>
-                <Icon size={21} />
+              <div
+                className="summary-icon"
+                style={{ background: card.background, color: card.color }}
+              >
+                <Icon size={20} />
               </div>
               <div className="min-w-0">
                 <p className="summary-value">{card.value}</p>
@@ -555,29 +586,19 @@ name: "Aarav Sharma",
         </div>
       </div>
 
-      <h5 className="section-label">Filter</h5>
+      {/* FILTERS */}
 
-      <div className="filter-card mb-2">
+      <h5 className="section-label">
+        Filter
+      </h5>
+
+      <div className="filter-card">
         <div className="card-body">
-          <div className="d-flex align-items-end gap-2 flex-wrap">
-            <div style={{ flex: "1.8 1 260px", minWidth: "220px" }}>
-              <label className="form-label small mb-1">Search Document</label>
-              <div className="input-group input-group-sm">
-                <span className="input-group-text bg-primary text-white border-primary px-2">
-                  <Search size={12} />
-                </span>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={searchText}
-                  onChange={(event) => setSearchText(event.target.value)}
-                  placeholder="Document, category, file"
-                />
-              </div>
-            </div>
-
-            <div style={{ flex: "1 1 170px", minWidth: "150px" }}>
-              <label className="form-label small mb-1">Status</label>
+          <div className="d-flex align-items-end gap-2 flex-wrap overflow-visible pb-1">
+            <div style={{ flex: "1 1 142px", minWidth: "132px" }}>
+              <label className="form-label small mb-1">
+                Status
+              </label>
               <select
                 className="form-select form-select-sm"
                 value={statusFilter}
@@ -591,8 +612,10 @@ name: "Aarav Sharma",
               </select>
             </div>
 
-            <div style={{ flex: "1 1 260px", minWidth: "220px" }}>
-              <label className="form-label small mb-1">Required Upload Progress</label>
+            <div style={{ flex: "1.6 1 250px", minWidth: "230px" }}>
+              <label className="form-label small mb-1">
+                Required Upload Progress
+              </label>
               <div className="d-flex align-items-center gap-2">
                 <div className="progress flex-grow-1">
                   <div
@@ -608,8 +631,12 @@ name: "Aarav Sharma",
               </div>
             </div>
 
-            <div className="filter-actions d-flex align-items-end gap-2" style={{ flex: "0 0 72px" }}>
-              <button className="btn btn-primary d-flex align-items-center justify-content-center" aria-label="Search" title="Search">
+            <div className="filter-actions ms-auto d-flex gap-2">
+              <button
+                className="btn btn-primary d-flex align-items-center justify-content-center"
+                aria-label="Search"
+                title="Search"
+              >
                 <Search size={16} />
               </button>
               <button
@@ -625,10 +652,12 @@ name: "Aarav Sharma",
         </div>
       </div>
 
+      {/* DOCUMENT TABLE */}
+
       <div className="grid-card">
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-center gap-2 mb-2 flex-wrap">
-            <p className="section-label mb-0">Document Upload & Verification</p>
+            <h5 className="section-label mb-0">Document Upload & Verification</h5>
             <button
               type="button"
               className="btn btn-primary btn-sm d-inline-flex align-items-center gap-2"

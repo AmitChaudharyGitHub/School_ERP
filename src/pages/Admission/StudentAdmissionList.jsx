@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 import {
@@ -18,11 +18,14 @@ import {
   ChevronRight,
   ChevronsRight,
   CalendarDays,
+  Download,
+  Upload,
 } from "lucide-react";
 
 const StudentAdmissionList = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [activeTab, setActiveTab] = useState("student");
   const [showColumnMenu, setShowColumnMenu] = useState(false);
   const [columnFilters, setColumnFilters] = useState({});
   const [admissionDateRange, setAdmissionDateRange] = useState({
@@ -30,6 +33,7 @@ const StudentAdmissionList = () => {
     to: "",
   });
   const [showAdmissionCalendar, setShowAdmissionCalendar] = useState(false);
+  const [editingRemarkIndex, setEditingRemarkIndex] = useState(null);
   const [hoveredAdmissionDate, setHoveredAdmissionDate] = useState("");
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const today = new Date();
@@ -38,6 +42,86 @@ const StudentAdmissionList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [columnWidths, setColumnWidths] = useState({});
+  const fileInputsRef = useRef([]);
+  const [documents, setDocuments] = useState([]);
+  const columnMenuRef = useRef(null);
+  const columnToggleRef = useRef(null);
+
+  useEffect(() => {
+    if (!showColumnMenu) return;
+
+    const handleDocumentClick = (e) => {
+      const menu = columnMenuRef.current;
+      const toggle = columnToggleRef.current;
+
+      if (menu && menu.contains(e.target)) return;
+      if (toggle && toggle.contains(e.target)) return;
+
+      setShowColumnMenu(false);
+    };
+
+    document.addEventListener("mousedown", handleDocumentClick);
+    return () => document.removeEventListener("mousedown", handleDocumentClick);
+  }, [showColumnMenu]);
+
+  useEffect(() => {
+    // allow page scrolling; scrollbar visuals will be hidden via CSS
+  }, []);
+
+  const documentsTemplate = useMemo(() => [
+    { id: 1, docName: "Student Passport Size Photo", category: "Photo", required: true, documentNo: "", uploadDate: "2024-05-28", remark: "Accepted", verifiedBy: "Admin", fileName: "photo.png", fileSize: "240 KB", fileObject: null, fileUrl: "#", status: "Verified" },
+    { id: 2, docName: "Student Aadhar Card", category: "Identity", required: true, documentNo: "", uploadDate: "2024-05-28", remark: "Pending verification", verifiedBy: "", fileName: "aadharcard1.pdf", fileSize: "380 KB", fileObject: null, fileUrl: "#", status: "Pending" },
+    { id: 3, docName: "Student Father Aadhar Card", category: "Identity", required: true, documentNo: "", uploadDate: "2024-05-20", remark: "Rejected - unclear image", verifiedBy: "", fileName: null, fileSize: "-", fileObject: null, fileUrl: null, status: "Missing" },
+    { id: 4, docName: "Student Mother Aadhar Card", category: "Identity", required: true, documentNo: "", uploadDate: "", remark: "", verifiedBy: "", fileName: null, fileSize: "-", fileObject: null, fileUrl: null, status: "Not Uploaded" },
+  ], []);
+
+  const handleUploadClick = (index) => {
+    if (fileInputsRef.current[index]) fileInputsRef.current[index].click();
+  };
+
+  const handleFileChange = (index, e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const fileUrl = URL.createObjectURL(file);
+    setDocuments((prev) => {
+      const copy = [...prev];
+      // revoke previous url if present
+      if (copy[index] && copy[index].fileUrl) URL.revokeObjectURL(copy[index].fileUrl);
+      copy[index] = { ...copy[index], fileName: file.name, fileObject: file, fileUrl, status: "Pending", uploadDate: new Date().toISOString().slice(0, 10) };
+      return copy;
+    });
+  };
+
+  const handleDeleteFile = (index) => {
+    setDocuments((prev) => {
+      const copy = [...prev];
+      if (copy[index] && copy[index].fileUrl) {
+        try { URL.revokeObjectURL(copy[index].fileUrl); } catch (e) { }
+      }
+      copy[index] = { ...copy[index], fileName: null, fileObject: null, fileUrl: null, status: "Not Uploaded", uploadDate: null };
+      return copy;
+    });
+  };
+
+  const handleDocFieldChange = (index, field, value) => {
+    setDocuments((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: value };
+      return copy;
+    });
+  };
+
+  const handleDownloadFile = (index) => {
+    const doc = documents[index];
+    if (!doc || !doc.fileUrl) return;
+    const a = document.createElement("a");
+    a.href = doc.fileUrl;
+    a.download = doc.fileName || "attachment";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
   const actionButtonStyle = useMemo(() => ({
     width: "28px",
     height: "28px",
@@ -98,8 +182,14 @@ const StudentAdmissionList = () => {
       gender: "Male",
       admissionDate: "15/05/2024",
       installmentPlan: "2 Installments",
+      feePlan: "Annual",
+      studentStatus: "Active",
       mobile: "9876543210",
       fatherName: "Rajesh Sharma",
+      motherName: "Sunita Sharma",
+      motherOccupation: "Homemaker",
+      address: "12 Bluebell Street, Mumbai",
+      pincode: "400001",
       documentStatus: "Pending",
       feeStatus: "Pending",
     },
@@ -111,8 +201,14 @@ const StudentAdmissionList = () => {
       gender: "Female",
       admissionDate: "14/05/2024",
       installmentPlan: "3 Installments",
+      feePlan: "Term-wise",
+      studentStatus: "Active",
       mobile: "9123456780",
       fatherName: "Viral Patel",
+      motherName: "Nisha Patel",
+      motherOccupation: "Teacher",
+      address: "45 Green Park, Pune",
+      pincode: "411001",
       documentStatus: "Verified",
       feeStatus: "Paid",
     },
@@ -124,12 +220,18 @@ const StudentAdmissionList = () => {
       gender: "Male",
       admissionDate: "13/05/2024",
       installmentPlan: "2 Installments",
+      feePlan: "Quarterly",
+      studentStatus: "Pending",
       mobile: "9988776655",
       fatherName: "Amit Singh",
+      motherName: "Priya Singh",
+      motherOccupation: "Nurse",
+      address: "78 Sunrise Avenue, Nashik",
+      pincode: "422001",
       documentStatus: "Pending",
       feeStatus: "Pending",
     },
-       {
+    {
       id: 4,
       admissionNo: "ADM2024/001",
       studentName: "Aarav Sharma",
@@ -137,8 +239,14 @@ const StudentAdmissionList = () => {
       gender: "Male",
       admissionDate: "15/05/2024",
       installmentPlan: "2 Installments",
+      feePlan: "Annual",
+      studentStatus: "Active",
       mobile: "9876543210",
       fatherName: "Rajesh Sharma",
+      motherName: "Sunita Sharma",
+      motherOccupation: "Homemaker",
+      address: "12 Bluebell Street, Mumbai",
+      pincode: "400001",
       documentStatus: "Pending",
       feeStatus: "Pending",
     },
@@ -150,8 +258,14 @@ const StudentAdmissionList = () => {
       gender: "Female",
       admissionDate: "14/05/2024",
       installmentPlan: "3 Installments",
+      feePlan: "Term-wise",
+      studentStatus: "Active",
       mobile: "9123456780",
       fatherName: "Viral Patel",
+      motherName: "Nisha Patel",
+      motherOccupation: "Teacher",
+      address: "45 Green Park, Pune",
+      pincode: "411001",
       documentStatus: "Verified",
       feeStatus: "Paid",
     },
@@ -163,12 +277,18 @@ const StudentAdmissionList = () => {
       gender: "Male",
       admissionDate: "13/05/2024",
       installmentPlan: "2 Installments",
+      feePlan: "Quarterly",
+      studentStatus: "Pending",
       mobile: "9988776655",
       fatherName: "Amit Singh",
+      motherName: "Priya Singh",
+      motherOccupation: "Nurse",
+      address: "78 Sunrise Avenue, Nashik",
+      pincode: "422001",
       documentStatus: "Pending",
       feeStatus: "Pending",
     },
-      {
+    {
       id: 7,
       admissionNo: "ADM2024/001",
       studentName: "Aarav Sharma",
@@ -176,8 +296,14 @@ const StudentAdmissionList = () => {
       gender: "Male",
       admissionDate: "15/05/2024",
       installmentPlan: "2 Installments",
+      feePlan: "Annual",
+      studentStatus: "Active",
       mobile: "9876543210",
       fatherName: "Rajesh Sharma",
+      motherName: "Sunita Sharma",
+      motherOccupation: "Homemaker",
+      address: "12 Bluebell Street, Mumbai",
+      pincode: "400001",
       documentStatus: "Pending",
       feeStatus: "Pending",
     },
@@ -189,8 +315,14 @@ const StudentAdmissionList = () => {
       gender: "Female",
       admissionDate: "14/05/2024",
       installmentPlan: "3 Installments",
+      feePlan: "Term-wise",
+      studentStatus: "Active",
       mobile: "9123456780",
       fatherName: "Viral Patel",
+      motherName: "Nisha Patel",
+      motherOccupation: "Teacher",
+      address: "45 Green Park, Pune",
+      pincode: "411001",
       documentStatus: "Verified",
       feeStatus: "Paid",
     },
@@ -202,8 +334,185 @@ const StudentAdmissionList = () => {
       gender: "Male",
       admissionDate: "13/05/2024",
       installmentPlan: "2 Installments",
+      feePlan: "Quarterly",
+      studentStatus: "Pending",
       mobile: "9988776655",
       fatherName: "Amit Singh",
+      motherName: "Priya Singh",
+      motherOccupation: "Nurse",
+      address: "78 Sunrise Avenue, Nashik",
+      pincode: "422001",
+      documentStatus: "Pending",
+      feeStatus: "Pending",
+    },
+    {
+      id: 1,
+      admissionNo: "ADM2024/001",
+      studentName: "Aarav Sharma",
+      standard: "5th Standard",
+      gender: "Male",
+      admissionDate: "15/05/2024",
+      installmentPlan: "2 Installments",
+      feePlan: "Annual",
+      studentStatus: "Active",
+      mobile: "9876543210",
+      fatherName: "Rajesh Sharma",
+      motherName: "Sunita Sharma",
+      motherOccupation: "Homemaker",
+      address: "12 Bluebell Street, Mumbai",
+      pincode: "400001",
+      documentStatus: "Pending",
+      feeStatus: "Pending",
+    },
+    {
+      id: 2,
+      admissionNo: "ADM2024/002",
+      studentName: "Diya Patel",
+      standard: "6th Standard",
+      gender: "Female",
+      admissionDate: "14/05/2024",
+      installmentPlan: "3 Installments",
+      feePlan: "Term-wise",
+      studentStatus: "Active",
+      mobile: "9123456780",
+      fatherName: "Viral Patel",
+      motherName: "Nisha Patel",
+      motherOccupation: "Teacher",
+      address: "45 Green Park, Pune",
+      pincode: "411001",
+      documentStatus: "Verified",
+      feeStatus: "Paid",
+    },
+    {
+      id: 3,
+      admissionNo: "ADM2024/003",
+      studentName: "Vivaan Singh",
+      standard: "7th Standard",
+      gender: "Male",
+      admissionDate: "13/05/2024",
+      installmentPlan: "2 Installments",
+      feePlan: "Quarterly",
+      studentStatus: "Pending",
+      mobile: "9988776655",
+      fatherName: "Amit Singh",
+      motherName: "Priya Singh",
+      motherOccupation: "Nurse",
+      address: "78 Sunrise Avenue, Nashik",
+      pincode: "422001",
+      documentStatus: "Pending",
+      feeStatus: "Pending",
+    },
+    {
+      id: 4,
+      admissionNo: "ADM2024/001",
+      studentName: "Aarav Sharma",
+      standard: "5th Standard",
+      gender: "Male",
+      admissionDate: "15/05/2024",
+      installmentPlan: "2 Installments",
+      feePlan: "Annual",
+      studentStatus: "Active",
+      mobile: "9876543210",
+      fatherName: "Rajesh Sharma",
+      motherName: "Sunita Sharma",
+      motherOccupation: "Homemaker",
+      address: "12 Bluebell Street, Mumbai",
+      pincode: "400001",
+      documentStatus: "Pending",
+      feeStatus: "Pending",
+    },
+    {
+      id: 5,
+      admissionNo: "ADM2024/002",
+      studentName: "Diya Patel",
+      standard: "6th Standard",
+      gender: "Female",
+      admissionDate: "14/05/2024",
+      installmentPlan: "3 Installments",
+      feePlan: "Term-wise",
+      studentStatus: "Active",
+      mobile: "9123456780",
+      fatherName: "Viral Patel",
+      motherName: "Nisha Patel",
+      motherOccupation: "Teacher",
+      address: "45 Green Park, Pune",
+      pincode: "411001",
+      documentStatus: "Verified",
+      feeStatus: "Paid",
+    },
+    {
+      id: 6,
+      admissionNo: "ADM2024/003",
+      studentName: "Vivaan Singh",
+      standard: "7th Standard",
+      gender: "Male",
+      admissionDate: "13/05/2024",
+      installmentPlan: "2 Installments",
+      feePlan: "Quarterly",
+      studentStatus: "Pending",
+      mobile: "9988776655",
+      fatherName: "Amit Singh",
+      motherName: "Priya Singh",
+      motherOccupation: "Nurse",
+      address: "78 Sunrise Avenue, Nashik",
+      pincode: "422001",
+      documentStatus: "Pending",
+      feeStatus: "Pending",
+    },
+    {
+      id: 7,
+      admissionNo: "ADM2024/001",
+      studentName: "Aarav Sharma",
+      standard: "5th Standard",
+      gender: "Male",
+      admissionDate: "15/05/2024",
+      installmentPlan: "2 Installments",
+      feePlan: "Annual",
+      studentStatus: "Active",
+      mobile: "9876543210",
+      fatherName: "Rajesh Sharma",
+      motherName: "Sunita Sharma",
+      motherOccupation: "Homemaker",
+      address: "12 Bluebell Street, Mumbai",
+      pincode: "400001",
+      documentStatus: "Pending",
+      feeStatus: "Pending",
+    },
+    {
+      id: 8,
+      admissionNo: "ADM2024/002",
+      studentName: "Diya Patel",
+      standard: "6th Standard",
+      gender: "Female",
+      admissionDate: "14/05/2024",
+      installmentPlan: "3 Installments",
+      feePlan: "Term-wise",
+      studentStatus: "Active",
+      mobile: "9123456780",
+      fatherName: "Viral Patel",
+      motherName: "Nisha Patel",
+      motherOccupation: "Teacher",
+      address: "45 Green Park, Pune",
+      pincode: "411001",
+      documentStatus: "Verified",
+      feeStatus: "Paid",
+    },
+    {
+      id: 9,
+      admissionNo: "ADM2024/003",
+      studentName: "Vivaan Singh",
+      standard: "7th Standard",
+      gender: "Male",
+      admissionDate: "13/05/2024",
+      installmentPlan: "2 Installments",
+      feePlan: "Quarterly",
+      studentStatus: "Pending",
+      mobile: "9988776655",
+      fatherName: "Amit Singh",
+      motherName: "Priya Singh",
+      motherOccupation: "Nurse",
+      address: "78 Sunrise Avenue, Nashik",
+      pincode: "422001",
       documentStatus: "Pending",
       feeStatus: "Pending",
     },
@@ -211,20 +520,25 @@ const StudentAdmissionList = () => {
 
   const columns = useMemo(
     () => [
-      { key: "admissionNo", label: "Admission No.", minWidth: "120px" },
-      { key: "studentName", label: "Student Name", minWidth: "120px" },
-      { key: "standard", label: "Standard", minWidth: "150px" },
-      { key: "gender", label: "Gender", minWidth: "150px" },
-      { key: "admissionDate", label: "Admission Date", minWidth: "120px" },
-      { key: "installmentPlan", label: "Fee Installment Plan", minWidth: "120px" },
-      { key: "mobile", label: "Mobile No.", minWidth: "120px" },
-      { key: "fatherName", label: "Father Name", minWidth: "120px" },
-      { key: "documentStatus",label: "Document Status",minWidth: "120px"},
-      {key: "feeStatus",label: "Fee Status", minWidth: "120px"},
+      { key: "admissionNo", label: "Admission No.", minWidth: "120px", visible: true },
+      { key: "studentName", label: "Student Name", minWidth: "120px", visible: true },
+      { key: "standard", label: "Standard", minWidth: "150px", visible: true },
+      { key: "gender", label: "Gender", minWidth: "100px", visible: true },
+      { key: "admissionDate", label: "Admission Date", minWidth: "120px", visible: true },
+
+      { key: "installmentPlan", label: "Fee Installment Plan", minWidth: "120px", visible: true },
+      { key: "mobile", label: "Mobile No.", minWidth: "120px", visible: true },
+      { key: "fatherName", label: "Father Name", minWidth: "120px", visible: true },
+      { key: "motherOccupation", label: "Mother Occupation", minWidth: "150px", visible: true },
+      { key: "address", label: "Address", minWidth: "180px", visible: true },
+      { key: "pincode", label: "Pincode", minWidth: "110px", visible: true },
+      { key: "feePlan", label: "Fee Plan", minWidth: "120px", visible: true },
+      { key: "studentStatus", label: "Student Status", minWidth: "120px", visible: true },
       {
         key: "action",
         label: "Action",
         minWidth: "120px",
+        visible: true,
         filterable: false,
         render: (item) => (
           <div className="d-flex gap-2">
@@ -246,6 +560,8 @@ const StudentAdmissionList = () => {
               aria-label={`Edit admission for ${item.studentName}`}
               onClick={() => {
                 setSelectedStudent(item);
+                setActiveTab("student");
+                setDocuments(item.documents ? item.documents.map(d => ({ ...d })) : documentsTemplate.map(d => ({ ...d })));
                 setShowModal(true);
               }}
             >
@@ -267,10 +583,15 @@ const StudentAdmissionList = () => {
     ],
     [actionButtonStyle]
   );
-  const [visibleColumns, setVisibleColumns] = useState(
-    columns.reduce((visible, column) => ({ ...visible, [column.key]: true }), {})
+  const [visibleColumns, setVisibleColumns] = useState(() =>
+    columns.reduce(
+      (acc, column) => ({
+        ...acc,
+        [column.key]: column.visible ?? true,
+      }),
+      {}
+    )
   );
-
   const visibleTableColumns = columns.filter((column) => visibleColumns[column.key]);
   const getColumnMinWidth = useCallback((column) => Number.parseInt(column.minWidth, 10) || 120, []);
   const getColumnWidth = useCallback(
@@ -360,6 +681,21 @@ const StudentAdmissionList = () => {
     return `${day}-${month}-${year}`;
   };
 
+  const formatDisplayDate = (dateStr) => {
+    if (!dateStr) return "";
+    // already in DD/MM/YYYY
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return dateStr;
+    // YYYY-MM-DD
+    const iso = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+    const d = new Date(dateStr);
+    if (isNaN(d)) return dateStr;
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const yyyy = d.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+  };
+
   const admissionRangeValue = admissionDateRange.from && admissionDateRange.to
     ? `${formatDateKey(admissionDateRange.from)} - ${formatDateKey(admissionDateRange.to)}`
     : admissionDateRange.from
@@ -420,6 +756,17 @@ const StudentAdmissionList = () => {
     const dateTime = new Date(dateKey).getTime();
     return dateTime >= Math.min(startTime, endTime) && dateTime <= Math.max(startTime, endTime);
   };
+
+  const goToPreviousTab = useCallback(() => {
+    const tabs = ["student", "parent", "documents", "fees"];
+    const idx = tabs.indexOf(activeTab);
+
+    if (idx > 0) {
+      setActiveTab(tabs[idx - 1]);
+    } else {
+      setShowModal(false);
+    }
+  }, [activeTab]);
 
   const filteredAdmissions = admissions.filter((item) => {
     const matchesColumnFilters = columns.every((column) => {
@@ -492,21 +839,22 @@ const StudentAdmissionList = () => {
   const admissionModal = showModal ? (
 
     <div
-      className="modal fade show d-block"
+      className="modal fade show d-block admission-modal"
       style={{
-        backgroundColor: "rgba(0,0,0,0.5)"
+        backgroundColor: "rgba(0,0,0,0.6)"
       }}
     >
 
       <div className="modal-dialog modal-xl">
 
-        <div className="modal-content border-0 shadow">
+        <div className="modal-content border-0 shadow admission-modal-content">
 
           {/* HEADER */}
 
+
           <div className="modal-header">
 
-            <h5 className="fw-bold">
+            <h5 className="fw-bold modal-title">
 
               {selectedStudent
                 ? "Edit Student Admission"
@@ -527,13 +875,12 @@ const StudentAdmissionList = () => {
 
             {/* TABS */}
 
-            <ul
-              className="nav nav-tabs mb-4"
-            >
-
+            <ul className="nav nav-tabs mb-4">
               <li className="nav-item">
                 <button
-                  className="nav-link active"
+                  type="button"
+                  className={`nav-link ${activeTab === "student" ? "active" : ""}`}
+                  onClick={() => setActiveTab("student")}
                 >
                   Student Information
                 </button>
@@ -541,263 +888,568 @@ const StudentAdmissionList = () => {
 
               <li className="nav-item">
                 <button
-                  className="nav-link"
+                  type="button"
+                  className={`nav-link ${activeTab === "parent" ? "active" : ""}`}
+                  onClick={() => setActiveTab("parent")}
                 >
-                  Guardian Information
+                  Parent Information
                 </button>
               </li>
-
               <li className="nav-item">
                 <button
-                  className="nav-link"
+                  type="button"
+                  className={`nav-link ${activeTab === "documents" ? "active" : ""}`}
+                  onClick={() => setActiveTab("documents")}
                 >
-                  Other Information
+                  Document Section
                 </button>
               </li>
-
+              <li className="nav-item">
+                <button
+                  type="button"
+                  className={`nav-link ${activeTab === "fees" ? "active" : ""}`}
+                  onClick={() => setActiveTab("fees")}
+                >
+                  Fee Section
+                </button>
+              </li>
             </ul>
 
             {/* STUDENT INFO */}
 
-            <div className="row g-3">
+            {activeTab === "student" && (
+              <div className="row g-3">
 
-              <div className="col-md-3">
-                <label className="form-label">
-                  Admission No
-                </label>
+                <div className="col-md-3">
+                  <label className="form-label">
+                    Admission No
+                  </label>
 
-                <input
-                  type="text"
-                  className="form-control"
-                  defaultValue={
-                    selectedStudent?.admissionNo || ""
-                  }
-                />
-              </div>
+                  <input
+                    type="text"
+                    className="form-control"
+                    defaultValue={selectedStudent?.admissionNo || ""}
+                  />
+                </div>
 
-              <div className="col-md-3">
-                <label className="form-label">
-                  Admission Date
-                </label>
+                <div className="col-md-3">
+                  <label className="form-label">
+                    Academic Year
+                  </label>
 
-                <input
-                  type="date"
-                  className="form-control"
-                />
-              </div>
+                  <select className="form-select" defaultValue={selectedStudent?.academicYear || "2024-25"}>
+                    <option>2024-25</option>
+                    <option>2025-26</option>
+                  </select>
+                </div>
 
-              <div className="col-md-3">
-                <label className="form-label">
-                  Academic Year
-                </label>
+                <div className="col-md-3">
+                  <label className="form-label">
+                    Admission Date
+                  </label>
 
-                <select className="form-select">
-                  <option>2024-25</option>
-                  <option>2025-26</option>
-                </select>
-              </div>
+                  <input
+                    type="date"
+                    className="form-control"
+                    defaultValue={selectedStudent?.admissionDate || ""}
+                  />
+                </div>
 
-              <div className="col-md-3">
-                <label className="form-label">
-                  Standard
-                </label>
+                <div className="col-md-3">
+                  <label className="form-label">
+                    Standard
+                  </label>
 
-                <select className="form-select">
-                  <option>Select Standard</option>
-                  <option>5th Standard</option>
-                  <option>6th Standard</option>
-                  <option>7th Standard</option>
-                  <option>8th Standard</option>
-                  <option>9th Standard</option>
-                  <option>10th Standard</option>
-                </select>
-              </div>
+                  <select className="form-select" defaultValue={selectedStudent?.standard || ""}>
+                    <option value="">Select Standard</option>
+                    <option>5th Standard</option>
+                    <option>6th Standard</option>
+                    <option>7th Standard</option>
+                    <option>8th Standard</option>
+                    <option>9th Standard</option>
+                    <option>10th Standard</option>
+                  </select>
+                </div>
 
-              <div className="col-md-3">
-                <label className="form-label">
-                  Student Name
-                </label>
+                <div className="col-md-3">
+                  <label className="form-label">
+                    Student Name
+                  </label>
 
-                <input
-                  type="text"
-                  className="form-control"
-                  defaultValue={
-                    selectedStudent?.studentName || ""
-                  }
-                />
-              </div>
+                  <input
+                    type="text"
+                    className="form-control"
+                    defaultValue={selectedStudent?.studentName || ""}
+                  />
+                </div>
 
-              <div className="col-md-3">
-                <label className="form-label">
-                  Gender
-                </label>
+                <div className="col-md-3">
+                  <label className="form-label">
+                    Gender
+                  </label>
 
-                <select className="form-select">
-                  <option>Male</option>
-                  <option>Female</option>
-                </select>
-              </div>
+                  <select className="form-select" defaultValue={selectedStudent?.gender || ""}>
+                    <option value="">Select Gender</option>
+                    <option>Male</option>
+                    <option>Female</option>
+                  </select>
+                </div>
 
-              <div className="col-md-3">
-                <label className="form-label">
-                  Date Of Birth
-                </label>
+                <div className="col-md-3">
+                  <label className="form-label">
+                    Date Of Birth
+                  </label>
 
-                <input
-                  type="date"
-                  className="form-control"
-                />
-              </div>
+                  <input
+                    type="date"
+                    className="form-control"
+                    defaultValue={selectedStudent?.dateOfBirth || ""}
+                  />
+                </div>
 
-              <div className="col-md-3">
-                <label className="form-label">
-                  Category
-                </label>
+                <div className="col-md-3">
+                  <label className="form-label">
+                    Blood Group
+                  </label>
 
-                <select className="form-select">
-                  <option>General</option>
-                  <option>OBC</option>
-                  <option>SC</option>
-                  <option>ST</option>
-                </select>
-              </div>
+                  <select className="form-select" defaultValue={selectedStudent?.bloodGroup || ""}>
+                    <option value="">Select Blood Group</option>
+                    <option>O+</option>
+                    <option>A+</option>
+                    <option>AB+</option>
+                    <option>O-</option>
+                  </select>
+                </div>
 
-              <div className="col-md-3">
-                <label className="form-label">
-                  Mobile No
-                </label>
+                <div className="col-md-3">
+                  <label className="form-label">
+                    Religion
+                  </label>
 
-                <input
-                  type="text"
-                  className="form-control"
-                  defaultValue={
-                    selectedStudent?.mobile || ""
-                  }
-                />
-              </div>
+                  <select className="form-select" defaultValue={selectedStudent?.religion || ""}>
+                    <option value="">Select Religion</option>
+                    <option>Hinduism</option>
+                    <option>Buddhism</option>
+                    <option>Jainism</option>
+                    <option>Sikhism</option>
+                  </select>
+                </div>
 
-              <div className="col-md-3">
-                <label className="form-label">
-                  Father Name
-                </label>
+                <div className="col-md-3">
+                  <label className="form-label">
+                    Category
+                  </label>
 
-                <input
-                  type="text"
-                  className="form-control"
-                  defaultValue={
-                    selectedStudent?.fatherName || ""
-                  }
-                />
-              </div>
+                  <select className="form-select" defaultValue={selectedStudent?.category || ""}>
+                    <option value="">Select Category</option>
+                    <option>General</option>
+                    <option>OBC</option>
+                    <option>SC</option>
+                    <option>ST</option>
+                  </select>
+                </div>
 
-              <div className="col-md-3">
-                <label className="form-label">
-                  Mother Name
-                </label>
+                <div className="col-md-3">
+                  <label className="form-label">
+                    Mobile No
+                  </label>
 
-                <input
-                  type="text"
-                  className="form-control"
-                />
-              </div>
+                  <input
+                    type="text"
+                    className="form-control"
+                    defaultValue={selectedStudent?.mobile || ""}
+                  />
+                </div>
 
-              <div className="col-md-3">
-                <label className="form-label">
-                  Email ID
-                </label>
+                <div className="col-md-3">
+                  <label className="form-label">
+                    Aadhaar No
+                  </label>
 
-                <input
-                  type="email"
-                  className="form-control"
-                />
-              </div>
+                  <input
+                    type="text"
+                    className="form-control"
+                    defaultValue={selectedStudent?.aadhaarNo || ""}
+                  />
+                </div>
 
-              <div className="col-md-4">
-                <label className="form-label">
-                  Fee Installment Plan
-                </label>
+                <div className="col-md-3">
+                  <label className="form-label">
+                    Address
+                  </label>
 
-                <select className="form-select">
+                  <input
+                    type="text"
+                    className="form-control"
+                    defaultValue={selectedStudent?.address || ""}
+                  />
+                </div>
 
-                  <option>
-                    Select Plan
-                  </option>
+                <div className="col-md-3">
+                  <label className="form-label">
+                    Pincode
+                  </label>
 
-                  <option>
-                    Full Payment
-                  </option>
+                  <input
+                    type="text"
+                    className="form-control"
+                    defaultValue={selectedStudent?.pincode || ""}
+                  />
+                </div>
 
-                  <option>
-                    2 Installments
-                  </option>
 
-                  <option>
-                    3 Installments
-                  </option>
+                <div className="col-md-3">
+                  <label className="form-label">
+                    Student Status
+                  </label>
 
-                  <option>
-                    4 Installments
-                  </option>
-
-                </select>
-
-              </div>
-
-            </div>
-
-            {/* STATUS SECTION */}
-
-            <div className="row mt-4">
-
-              <div className="col-md-6">
-
-                <div
-                  className="card border-warning"
-                >
-
-                  <div className="card-body">
-
-                    <h6 className="text-warning">
-                      Document Status
-                    </h6>
-
-                    <h5>Pending</h5>
-
-                    <small>
-                      Documents Verification Pending
-                    </small>
-
-                  </div>
-
+                  <select className="form-select" defaultValue={selectedStudent?.studentStatus || ""}>
+                    <option value="">Select Status</option>
+                    <option>Active</option>
+                    <option>Pending</option>
+                    <option>Inactive</option>
+                  </select>
                 </div>
 
               </div>
+            )}
 
-              <div className="col-md-6">
+            {activeTab === "parent" && (
+              <div>
+                <h6 className="fw-semibold mb-3">Parent Information</h6>
+                <div className="row g-3">
+                  <div className="col-md-3">
+                    <label className="form-label">
+                      Father Name
+                    </label>
 
-                <div
-                  className="card border-danger"
-                >
-
-                  <div className="card-body">
-
-                    <h6 className="text-danger">
-                      Fee Status
-                    </h6>
-
-                    <h5>Pending</h5>
-
-                    <small>
-                      Admission Fee Pending
-                    </small>
-
+                    <input
+                      type="text"
+                      className="form-control"
+                      defaultValue={selectedStudent?.fatherName || ""}
+                    />
                   </div>
 
+                  <div className="col-md-3">
+                    <label className="form-label">
+                      Father Mobile No
+                    </label>
+
+                    <input
+                      type="text"
+                      className="form-control"
+                      defaultValue={selectedStudent?.fatherMobileNo || ""}
+                    />
+                  </div>
+
+                  <div className="col-md-3">
+                    <label className="form-label">
+                      Father Email ID
+                    </label>
+
+                    <input
+                      type="text"
+                      className="form-control"
+                      defaultValue={selectedStudent?.fatherEmailId || ""}
+                    />
+                  </div>
+
+                  <div className="col-md-3">
+                    <label className="form-label">
+                      Father Occupation
+                    </label>
+
+                    <input
+                      type="text"
+                      className="form-control"
+                      defaultValue={selectedStudent?.fatherOccupation || ""}
+                    />
+                  </div>
+
+                  <div className="col-md-3">
+                    <label className="form-label">
+                      Mother Name
+                    </label>
+
+                    <input
+                      type="text"
+                      className="form-control"
+                      defaultValue={selectedStudent?.motherName || ""}
+                    />
+                  </div>
+
+                  <div className="col-md-3">
+                    <label className="form-label">
+                      Mother Mobile No
+                    </label>
+
+                    <input
+                      type="text"
+                      className="form-control"
+                      defaultValue={selectedStudent?.motherMobileNo || ""}
+                    />
+                  </div>
+
+                  <div className="col-md-3">
+                    <label className="form-label">
+                      Mother Email ID
+                    </label>
+
+                    <input
+                      type="email"
+                      className="form-control"
+                      defaultValue={selectedStudent?.motherEmailId || ""}
+                    />
+                  </div>
+
+                  <div className="col-md-3">
+                    <label className="form-label">
+                      Mother Occupation
+                    </label>
+
+                    <input
+                      type="text"
+                      className="form-control"
+                      defaultValue={selectedStudent?.motherOccupation || ""}
+                    />
+                  </div>
                 </div>
-
               </div>
+            )}
 
-            </div>
+            {activeTab === "documents" && (
+              <div className="student-document-style">
+                <h6 className="fw-semibold mb-3">Document Section</h6>
+                <div className="table-shell">
+                  <table className="table table-sm table-striped align-middle document-table">
+                    <thead>
+                      <tr>
+                        <th>Document Name</th>
+                        <th>Category</th>
+                        <th>Required</th>
+                        <th>Uploaded File</th>
+                        <th>Upload Date</th>
+                        <th>Verified By</th>
+                        <th>Status</th>
+                        <th>Remarks</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {documents.map((doc, idx) => (
+                        <tr key={doc.id || idx} className={idx === 0 ? "active-row" : undefined}>
+                          <td className="fw-medium">{doc.docName}</td>
+                          <td >{doc.category || "-"}</td>
+                          <td>{doc.required ? <span className="badge bg-success">Yes</span> : <span className="badge bg-secondary">No</span>}</td>
+                          <td>
+                            {doc.fileName ? (
+                              <a href={doc.fileUrl || '#'} target="_blank" rel="noreferrer" className="text-decoration-none">{doc.fileName}</a>
+                            ) : (
+                              <span className="text-muted">-</span>
+                            )}
+                          </td>
+
+                          <td>
+                            {doc.uploadDate ? (
+                              <span>{formatDisplayDate(doc.uploadDate)}</span>
+                            ) : (
+                              <span className="text-muted">-</span>
+                            )}
+                          </td>
+                          <td>{doc.verifiedBy || "-"}</td>
+                          <td>
+                            {doc.status === "Verified" ? (
+                              <span className="badge bg-success">Verified</span>
+                            ) : doc.status === "Pending" ? (
+                              <span className="badge bg-warning text-dark">Pending</span>
+                            ) : doc.status === "Missing" ? (
+                              <span className="badge bg-danger">Missing</span>
+                            ) : doc.status === "Not Required" ? (
+                              <span className="badge bg-secondary">Not Required</span>
+                            ) : (
+                              <span className="badge bg-secondary">Not Uploaded</span>
+                            )}
+                          </td>
+                          <td>
+                            {editingRemarkIndex === idx ? (
+                              <input
+                                type="text"
+                                className="form-control form-control-sm"
+                                value={doc.remark || ""}
+                                autoFocus
+                                onChange={(e) => handleDocFieldChange(idx, "remark", e.target.value)}
+                                onBlur={() => setEditingRemarkIndex(null)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    setEditingRemarkIndex(null);
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <span
+                                className="text-truncate d-inline-block"
+                                style={{ maxWidth: "180px", cursor: "pointer" }}
+                                onDoubleClick={() => setEditingRemarkIndex(idx)}
+                                title={doc.remark || "Double click to edit"}
+                              >
+                                {doc.remark || "-"}
+                              </span>
+                            )}
+                          </td>
+                          <td>
+                            <div className="d-flex gap-2">
+                              <input
+                                type="file"
+                                style={{ display: "none" }}
+                                ref={(el) => (fileInputsRef.current[idx] = el)}
+                                onChange={(e) => handleFileChange(idx, e)}
+                              />
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-outline-success d-inline-flex align-items-center justify-content-center"
+                                style={actionButtonStyle}
+                                title="Upload"
+                                aria-label={`Upload ${doc.docName}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleUploadClick(idx);
+                                }}
+                              >
+                                <Upload size={14} />
+                              </button>
+                              <button
+                                className="btn btn-sm btn-outline-secondary"
+                                onClick={() => handleDownloadFile(idx)}
+                                title="Download"
+                                disabled={!doc.fileUrl}
+                              >
+                                <Download size={14} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "fees" && (
+              <div>
+                <h6 className="fw-semibold mb-3">Fee Section</h6>
+                <div className="row g-3">
+                  <div className="col-md-4">
+                    <label className="form-label">
+                      Fee Plan
+                    </label>
+
+                    <select className="form-select" defaultValue={selectedStudent?.feePlan || ""}>
+                      <option value="">Select Fee Plan</option>
+                      <option>Annual</option>
+                      <option>Semester</option>
+                      <option>Quarterly</option>
+                      <option>Monthly</option>
+                    </select>
+                  </div>
+                  <div className="col-md-4">
+                    <label className="form-label">
+                      Installment Plan
+                    </label>
+
+                    <select className="form-select" defaultValue={selectedStudent?.installmentPlan || ""}>
+                      <option value="">Select Installment</option>
+                      <option>One Installments</option>
+                      <option>Two Installments</option>
+                      <option>Four Installments</option>
+                      <option>Per Month Installments</option>
+                    </select>
+                  </div>
+
+                  <div className="col-md-4">
+                    <label className="form-label">
+                      Total Fee Amount
+                    </label>
+
+                    <input
+                      type="number"
+                      className="form-control"
+                      placeholder="Enter amount"
+                      defaultValue={selectedStudent?.totalFeeAmount || ""}
+                    />
+                  </div>
+
+                  <div className="col-md-4">
+                    <label className="form-label">
+                      Extra Charges
+                    </label>
+
+                    <input
+                      type="number"
+                      className="form-control"
+                      placeholder="Enter amount"
+                      defaultValue={selectedStudent?.extraCharges || ""}
+                    />
+                  </div>
+
+                  <div className="col-md-4">
+                    <label className="form-label">
+                      Payable Amount
+                    </label>
+
+                    <input
+                      type="number"
+                      className="form-control"
+                      placeholder="Enter amount"
+                      defaultValue={selectedStudent?.payableAmount || ""}
+                    />
+                  </div>
+
+                  <div className="col-md-4">
+                    <label className="form-label">
+                      Per Installment Amount
+                    </label>
+
+                    <input
+                      type="number"
+                      className="form-control"
+                      placeholder="Auto-calculated"
+                      disabled
+                      defaultValue={selectedStudent?.perInstallmentAmount || ""}
+                    />
+                  </div>
+
+
+
+                  <div className="col-md-4">
+                    <label className="form-label">
+                      Payment Status
+                    </label>
+
+                    <select className="form-select" defaultValue={selectedStudent?.paymentStatus || ""}>
+                      <option value="">Select Status</option>
+                      <option>Paid</option>
+                      <option>Partial</option>
+                      <option>Pending</option>
+                      <option>Overdue</option>
+                    </select>
+                  </div>
+
+                  <div className="col-md-12">
+                    <label className="form-label">
+                      Fee Remarks
+                    </label>
+
+                    <textarea
+                      className="form-control"
+                      rows="3"
+                      placeholder="Enter any remarks"
+                      defaultValue={selectedStudent?.feeRemarks || ""}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
           </div>
 
@@ -807,17 +1459,31 @@ const StudentAdmissionList = () => {
 
             <button
               className="btn btn-secondary"
-              onClick={() =>
-                setShowModal(false)
-              }
+              onClick={goToPreviousTab}
+              aria-label="Previous"
+              title="Previous"
+              disabled={activeTab === "student"}
+              aria-disabled={activeTab === "student"}
             >
-              Cancel
+              Previous
             </button>
 
             <button
-              className="btn btn-primary"
+              type="button"
+              className="btn btn-primary primary-action"
+              onClick={() => {
+                if (activeTab === "student") {
+                  setActiveTab("parent");
+                } else if (activeTab === "parent") {
+                  setActiveTab("documents");
+                } else if (activeTab === "documents") {
+                  setActiveTab("fees");
+                } else {
+                  setShowModal(false);
+                }
+              }}
             >
-              Save
+              {activeTab === "fees" ? "Save" : "Next"}
             </button>
 
           </div>
@@ -837,7 +1503,14 @@ const StudentAdmissionList = () => {
           min-height: calc(100vh - 20px);
           background: #f6f8fb;
           color: #172033;
+          -ms-overflow-style: auto; /* IE and Edge */
+          scrollbar-width: auto; /* Firefox */
+          scrollbar-color: rgba(0,0,0,0.12) transparent; /* Firefox thumb and track */
         }
+
+        .admission-page::-webkit-scrollbar { width: 8px; height: 8px; }
+        .admission-page::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 6px; }
+        .admission-page::-webkit-scrollbar-track { background: transparent; }
 
         .admission-page .page-header {
           background: #ffffff;
@@ -935,7 +1608,7 @@ const StudentAdmissionList = () => {
 
         .admission-page .filter-card .card-body,
         .admission-page .grid-card .card-body {
-          padding: 10px 12px !important;
+          padding: 6px 10px !important;
         }
 
         .admission-page .filter-actions .btn,
@@ -956,7 +1629,20 @@ const StudentAdmissionList = () => {
         .admission-page .table-shell {
           border: 1px solid #e6ebf2;
           border-radius: 8px;
-          overflow: auto;
+          height: 350px; 
+          overflow-x: auto;
+          overflow-y: auto; /* allow vertical scrolling when needed */
+          max-height: calc(100vh - 300px);
+          -ms-overflow-style: auto;
+          scrollbar-width: auto;
+        }
+
+        .admission-page .table-shell::-webkit-scrollbar { width: 8px; height: 10px; }
+        .admission-page .table-shell::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 6px; }
+        .admission-page .table-shell::-webkit-scrollbar-track { background: transparent; }
+
+        .admission-page .table-shell.with-column-menu {
+          overflow-y: auto;
         }
 
         .admission-page .admission-table {
@@ -973,11 +1659,31 @@ const StudentAdmissionList = () => {
         .admission-page .admission-table thead tr:first-child th {
           background: #f8fafc;
           color: #0f172a;
-          border-bottom: 1px solid #dbe3ee;
+          border-bottom: none; /* remove border to avoid gap with filter row */
           font-size: 0.75rem;
           text-transform: uppercase;
           letter-spacing: 0;
+          height: 36px; /* explicit header height to align filter row */
+          padding: 8px 6px;
         }
+        /* Keep header and filter row visible when scrolling the table */
+        .admission-page .table-shell { position: relative; }
+        .admission-page .admission-table thead tr:first-child th {
+          position: sticky !important;
+          top: 0 !important;
+          z-index: 99 !important;
+          background: #f8fafc !important;
+        }
+        .admission-page .admission-table thead tr:nth-child(2) th {
+          position: sticky !important;
+          top: 36px !important; /* sits directly below the header row */
+          z-index: 98 !important;
+          background: #ffffff !important;
+          border-bottom: 1px solid #e6ebf2; /* keep separator under filters */
+          padding: 2px 6px !important;
+          height: 30px;
+        }
+          
 
         .admission-page .column-resize-handle {
           position: absolute;
@@ -1045,6 +1751,219 @@ const StudentAdmissionList = () => {
             display: none !important;
           }
         }
+
+        /* Document-table styles copied from StudentDocument.jsx to match theme and font-size */
+        .admission-page .student-document-style {
+          padding: 8px 0 0;
+          font-size: 0.86rem;
+          color: #1f2937;
+        }
+
+        .admission-page .student-document-style .table-shell {
+          border: 1px solid #e6ebf2;
+          border-radius: 8px;
+          overflow: auto;
+          max-height: calc(100vh - 300px);
+        }
+
+        .admission-page .column-menu {
+          max-height: 290px;
+          overflow-y: auto;
+        }
+
+        .admission-page .column-menu::-webkit-scrollbar { width: 8px; }
+        .admission-page .column-menu::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 6px; }
+        /* Tighten spacing and reduce font size for column toggle items */
+        .admission-page .column-menu label {
+          font-size: 0.72rem; /* slightly smaller than Bootstrap 'small' */
+          padding: 4px 6px; /* reduce vertical padding */
+          gap: 6px; /* smaller gap between checkbox and text */
+          margin: 0; 
+        }
+
+        .admission-page .column-menu label .form-check-input {
+          width: 14px;
+          height: 14px;
+          margin-right: 6px;
+        }
+        /* Compact action buttons inside the column popup */
+        .admission-page .column-popup-action {
+          font-size: 0.72rem;
+          padding: 4px 8px;
+          display: inline-block;
+          width: auto !important;
+          min-width: 0 !important;
+          line-height: 1;
+        }
+
+        .admission-page .document-table {
+          min-width: 980px;
+          table-layout: auto;
+        }
+
+        .admission-page .document-table th,
+        .admission-page .document-table td {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          vertical-align: middle;
+        }
+
+        .admission-page .document-table thead th {
+          background: #f8fafc;
+          color: #0f172a;
+          border-bottom: 1px solid #dbe3ee;
+          font-size: 0.75rem;
+          text-transform: uppercase;
+          letter-spacing: 0;
+        }
+
+        .admission-page .document-table tbody td {
+          color: #1f2937;
+          border-bottom-color: #edf2f7;
+        }
+
+        .admission-page .document-table tbody tr:hover td,
+        .admission-page .document-table tbody tr.active-row td {
+          background: #f8fbff;
+        }
+
+        .admission-page .student-document-style .badge {
+          border-radius: 999px;
+          padding: 0.35em 0.65em;
+          font-weight: 700;
+        }
+
+        /* Modal styling to match page header and spacing */
+        .admission-page .admission-modal .modal-dialog {
+          max-width: 1100px;
+        }
+
+        .admission-page .admission-modal .modal-content.admission-modal-content {
+          background: transparent;
+          box-shadow: none;
+        }
+
+        .admission-page .admission-modal .modal-header {
+          background: #ffffff;
+          border: 1px solid #e6ebf2;
+          border-left: 4px solid #2563eb;
+          border-top-left-radius: 8px;
+          border-top-right-radius: 8px;
+          padding: 10px 14px;
+          margin: 0 0 10px 0; /* small gap below header */
+          box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+          align-items: center;
+        }
+
+        .admission-page .admission-modal .modal-header .modal-title {
+          color: #1d4ed8;
+          font-size: 1.125rem;
+          line-height: 1.2;
+          margin: 0;
+          font-weight: 800;
+        }
+
+        .admission-page .admission-modal .modal-body {
+          background: #ffffff;
+          border: 1px solid #e6ebf2;
+          border-bottom-left-radius: 8px;
+          border-bottom-right-radius: 8px;
+          padding: 12px;
+          box-shadow: 0 8px 22px rgba(15, 23, 42, 0.03);
+        }
+
+        .admission-page .admission-modal .modal-footer {
+          background: transparent;
+          border-top: none;
+          gap: 8px;
+        }
+
+        /* Make only the Previous and Next/Save buttons opaque in the footer */
+        .admission-page .admission-modal .modal-footer .btn.btn-secondary {
+          background: #ffffff;
+          border: 1px solid #e6ebf2;
+          color: #0f172a;
+          box-shadow: 0 6px 14px rgba(15, 23, 42, 0.04);
+        }
+
+        .admission-page .admission-modal .modal-footer .btn.primary-action {
+          background: #2563eb;
+          border: 1px solid rgba(37,99,235,0.18);
+          color: #fff;
+          box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18);
+        }
+
+        .admission-page .admission-modal .primary-action {
+          min-height: 36px;
+          border-radius: 7px;
+          font-weight: 700;
+          box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18);
+          padding: 6px 14px;
+        }
+
+        /* Ensure Cancel and Next have identical sizing */
+        .admission-page .admission-modal .modal-footer .btn {
+          min-height: 36px;
+          border-radius: 7px;
+          padding: 6px 14px;
+          font-weight: 700;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+/* Reduce filter row height */
+.admission-page .admission-table thead tr:nth-child(2) th {
+    padding: 2px 4px !important;
+    height: 30px;
+    vertical-align: middle;
+}
+
+/* Reduce input height */
+.admission-page .admission-table thead tr:nth-child(2) .form-control,
+.admission-page .admission-table thead tr:nth-child(2) .form-select {
+    height: 24px !important;
+    min-height: 24px;
+    padding: 2px 6px;
+    font-size: 12px;
+}
+
+/* Reduce search icon box */
+.admission-page .admission-table thead tr:nth-child(2) .input-group-text {
+    height: 24px;
+    padding: 0 6px;
+    font-size: 12px;
+}
+
+/* Remove extra spacing */
+.admission-page .admission-table thead tr:nth-child(2) .input-group {
+    margin: 0;
+}
+
+.admission-page .admission-table tbody td {
+    font-size: 12px;
+    padding: 2px 6px !important;
+    line-height: 1.1;
+}
+
+.admission-page .admission-table tbody tr {
+    height: 26px;
+}
+
+.admission-page .admission-table tbody .btn {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+}
+
+.admission-page .admission-table tbody svg {
+    width: 12px;
+    height: 12px;
+}
+
+
+
+
       `}</style>
 
       {/* HEADER */}
@@ -1338,9 +2257,12 @@ const StudentAdmissionList = () => {
             </div>
 
             <button
-              className="btn btn-primary primary-action px-3"
+              className="btn btn-primary primary-action"
+              style={{ padding: "4px 8px", minHeight: "28px", height: "30px", fontSize: "0.9rem" }}
               onClick={() => {
                 setSelectedStudent(null);
+                setActiveTab("student");
+                setDocuments(documentsTemplate.map(d => ({ ...d })));
                 setShowModal(true);
               }}
             >
@@ -1349,7 +2271,7 @@ const StudentAdmissionList = () => {
           </div>
 
           <div className="position-relative">
-            <div className="table-shell">
+            <div className={`table-shell ${showColumnMenu ? 'with-column-menu' : ''}`}>
 
               <table
                 className="table table-sm table-striped align-middle admission-table"
@@ -1393,6 +2315,7 @@ const StudentAdmissionList = () => {
                               aria-expanded={showColumnMenu}
                               aria-label="Table column menu"
                               title="Table column menu"
+                              ref={columnToggleRef}
                             >
                               <Menu size={15} />
                             </button>
@@ -1488,11 +2411,12 @@ const StudentAdmissionList = () => {
             {showColumnMenu && (
               <div
                 className="position-absolute bg-white border rounded-3 shadow-sm p-2 text-start"
-                style={{ width: "260px", top: "36px", right: "8px", zIndex: 20 }}
+                style={{ width: "200px", top: "25px", right: "8px", zIndex: 20 }}
+                ref={columnMenuRef}
               >
                 <button
                   type="button"
-                  className="btn btn-light btn-sm w-100 text-start mb-1"
+                  className="btn btn-light btn-sm w-auto text-start mb-1 column-popup-action"
                   onClick={showAllColumns}
                 >
                   Use All Columns
@@ -1500,7 +2424,7 @@ const StudentAdmissionList = () => {
 
                 <button
                   type="button"
-                  className="btn btn-light btn-sm w-100 text-start mb-2"
+                  className="btn btn-light btn-sm w-auto text-start mb-2 column-popup-action"
                   onClick={() => {
                     setColumnFilters({});
                     setAdmissionDateRange({ from: "", to: "" });
@@ -1514,20 +2438,23 @@ const StudentAdmissionList = () => {
                   Show / Hide Columns
                 </div>
 
-                {columns.map((columnOption) => (
-                  <label
-                    key={columnOption.key}
-                    className="d-flex align-items-center gap-2 px-2 py-1 small"
-                  >
-                    <input
-                      type="checkbox"
-                      className="form-check-input m-0"
-                      checked={visibleColumns[columnOption.key]}
-                      onChange={() => toggleColumn(columnOption.key)}
-                    />
-                    <span>{columnOption.label}</span>
-                  </label>
-                ))}
+                <div className="column-menu px-1">
+                  {columns.map((columnOption) => (
+                    <label
+                      key={columnOption.key}
+                      className="d-flex align-items-center gap-2 px-2 py-1 small"
+                    >
+                      <input
+                        type="checkbox"
+                        className="form-check-input m-0"
+                        checked={visibleColumns[columnOption.key]}
+                        onChange={() => toggleColumn(columnOption.key)}
+                      />
+                      <span>{columnOption.label}</span>
+                    </label>
+                    
+                  ))}
+                </div>
               </div>
             )}
           </div>
