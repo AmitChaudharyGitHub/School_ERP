@@ -1,0 +1,209 @@
+/* ══════════════════════════════════════════
+   SIDEBAR BASE
+══════════════════════════════════════════ */
+
+.sidebar {
+    min-height: 100vh;
+    background: #1e1e2e;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 100;
+    transition: width 0.25s ease;
+    overflow: hidden;
+}
+
+.sidebar--collapsed {
+    width: 55px;
+}
+
+.sidebar--expanded {
+    width: 180px;
+}
+
+/* ══════════════════════════════════════════
+   LOGO
+══════════════════════════════════════════ */
+
+.sidebar-logo {
+    padding: 20px 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: 2px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.sidebar-menu {
+    list-style: none;
+    margin: 0;
+    padding: 8px 0;
+    flex: 1;
+}
+
+/* ══════════════════════════════════════════
+   SIDEBAR LINKS
+══════════════════════════════════════════ */
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    color: rgba(255, 255, 255, 0.6);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    min-height: 44px;
+}
+
+.sidebar-link:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: #ffffff;
+}
+
+.sidebar-link.active {
+    background: rgba(124, 58, 237, 0.15);
+    color: #a78bfa;
+}
+
+.sidebar-icon {
+    font-size: 16px;
+    width: 18px;
+    flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════
+   FLYOUT PARENT
+══════════════════════════════════════════ */
+
+.flyout-menu {
+    position: relative;
+    list-style: none;
+}
+
+.flyout-menu .sidebar-link.master-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    padding: 0;
+    min-height: 44px;
+}
+
+/* ── master-left fills full height like sidebar-link ── */
+.master-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    padding: 10px 16px;
+    min-height: 44px;
+    flex: 1;
+}
+
+.dropdown-icon {
+    font-size: 10px;
+    opacity: 0.5;
+    flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════
+   COLLAPSED STATE — icon centered, same height
+══════════════════════════════════════════ */
+
+.sidebar--collapsed .sidebar-link {
+    padding: 10px 0;
+    justify-content: center;
+    gap: 0;
+    min-height: 44px;
+}
+
+.sidebar--collapsed .master-left {
+    padding: 10px 0;
+    justify-content: center;
+    gap: 0;
+    min-height: 44px;
+}
+
+.sidebar--collapsed .flyout-menu .sidebar-link.master-title {
+    justify-content: center;
+    min-height: 44px;
+}
+
+.sidebar--collapsed .sidebar-icon {
+    font-size: 16px;
+    width: 18px;
+}
+
+/* ══════════════════════════════════════════
+   CHEVRON TRIGGER
+══════════════════════════════════════════ */
+
+.chevron-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-right: 8px;
+    transition: background 0.15s;
+}
+
+.chevron-trigger:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+/* ══════════════════════════════════════════
+   FLYOUT PANEL
+══════════════════════════════════════════ */
+
+.flyout-submenu {
+    position: fixed;
+    min-width: 150px;
+    background: #1e1e2e;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    list-style: none;
+    padding: 6px 0;
+    margin: 0;
+    z-index: 9999;
+    transition: opacity 0.15s;
+}
+
+/* ══════════════════════════════════════════
+   FLYOUT LINKS
+══════════════════════════════════════════ */
+
+.flyout-submenu__link {
+    display: block;
+    padding: 9px 16px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.6);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.12s, color 0.12s;
+}
+
+.flyout-submenu__link:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: #ffffff;
+}
+
+.flyout-submenu__link.active {
+    color: #a78bfa;
+    font-weight: 500;
+    background: rgba(124, 58, 237, 0.15);
+}

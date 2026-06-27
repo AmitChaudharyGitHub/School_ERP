@@ -1,0 +1,55 @@
+/* ══════════════════════════════════════════
+   RESET
+══════════════════════════════════════════ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        Oxygen, Ubuntu, sans-serif;
+    background: #f4f6fb;
+    color: #1a1a2e;
+}
+
+/* ══════════════════════════════════════════
+   APP LAYOUT
+══════════════════════════════════════════ */
+
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+.main-content {
+    flex: 1;
+    overflow-y: auto;
+    background: #f4f6fb;
+    min-width: 0;
+     padding: 5px;
+}
+
+/* Ensure buttons vertically center their contents and avoid clipping
+   This fixes cases where global resets or page-specific rules leave
+   icon-only buttons with no vertical alignment. */
+button, .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+/* Override page-scoped icon button rules that set fixed height/padding
+   Use !important to ensure these layout properties apply consistently */
+.filter-actions .btn,
+.icon-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 1 !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+}
